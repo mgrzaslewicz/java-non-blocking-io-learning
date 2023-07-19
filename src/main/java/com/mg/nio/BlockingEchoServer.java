@@ -1,5 +1,7 @@
 package com.mg.nio;
 
+import org.slf4j.Logger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -8,7 +10,10 @@ import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class BlockingEchoServer {
+    private static final Logger logger = getLogger(BlockingEchoServer.class);
     private final ExecutorService executorService;
     private final int port;
     private final AtomicBoolean stopped = new AtomicBoolean(false);
@@ -25,8 +30,10 @@ public class BlockingEchoServer {
 
     private void startListening() {
         try (var serverSocket = new ServerSocket(port)) {
+            logger.info("Started listening on {}", serverSocket.getLocalSocketAddress());
             while (!stopped.get()) {
                 var socket = serverSocket.accept();
+                logger.info("Accepted connection from {}", socket.getRemoteSocketAddress());
                 var in = socket.getInputStream();
                 var out = socket.getOutputStream();
                 uppercaseInToOut(in, out);
@@ -54,4 +61,5 @@ public class BlockingEchoServer {
     public void stop() {
         stopped.set(true);
     }
+
 }
