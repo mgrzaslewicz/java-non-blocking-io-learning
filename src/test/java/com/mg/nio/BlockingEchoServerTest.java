@@ -21,6 +21,41 @@ public class BlockingEchoServerTest {
         return port;
     }
 
+    private static class Connection {
+        private final Socket socket;
+
+        private Connection(Socket socket) {
+            this.socket = socket;
+        }
+
+        private static Connection withPort(int port) throws IOException {
+            return new Connection(new Socket("localhost", port));
+        }
+
+        public void send(byte[] data) throws IOException {
+            var out = socket.getOutputStream();
+            out.write(data);
+        }
+
+        public Connection send(int data) throws IOException {
+            var out = socket.getOutputStream();
+            out.write(data);
+            return this;
+        }
+
+        public void close() throws IOException {
+            socket.getInputStream().close();
+        }
+
+        public int receive() throws IOException {
+            return socket.getInputStream().read();
+        }
+
+        public byte[] receiveNBytes(int length) throws IOException {
+            return socket.getInputStream().readNBytes(length);
+        }
+    }
+
     @Test
     public void shouldBlockThread() throws IOException {
         // given
@@ -48,17 +83,16 @@ public class BlockingEchoServerTest {
         // when
         server.start();
         // then
-        var clientSocket = new Socket("localhost", port);
-        var out = clientSocket.getOutputStream();
-        out.write(1);
-        out.flush();
-        var in = clientSocket.getInputStream();
-        var data = in.read();
+        var connection = Connection.withPort(port);
+        connection.send(1);
+        var data = connection.receive();
         assertThat(data).isEqualTo(1);
 
         server.stop();
+        connection.close();
         singleThreadExecutor.shutdownNow();
     }
+
     @Test
     public void shouldMakeUppercase() throws Exception {
         // given
@@ -67,18 +101,15 @@ public class BlockingEchoServerTest {
         var server = new BlockingEchoServer(singleThreadExecutor, port);
         server.start();
 
-        var clientSocket = new Socket("localhost", port);
-        var out = clientSocket.getOutputStream();
-        var in = clientSocket.getInputStream();
+        var connection = Connection.withPort(port);
         var messageOut = "hello".getBytes();
         // when
-        out.write(messageOut);
-        var messageIn = in.readNBytes(messageOut.length);
+        connection.send(messageOut);
+        var messageIn = connection.receiveNBytes(messageOut.length);
         // then
         assertThat(new String(messageIn)).isEqualTo("HELLO");
 
-        out.close();
-        in.close();
+        connection.close();
         server.stop();
         singleThreadExecutor.shutdownNow();
     }
