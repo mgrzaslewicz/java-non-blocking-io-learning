@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-public class BlockingTransmogrifyServerTest {
+public class BlockingEchoServerTest {
 
     private int getFreePort() throws IOException {
         var serverSocket = new ServerSocket(0);
@@ -26,7 +26,7 @@ public class BlockingTransmogrifyServerTest {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
+        var server = new BlockingEchoServer(singleThreadExecutor, port);
         // when
         server.start();
         // then
@@ -44,7 +44,7 @@ public class BlockingTransmogrifyServerTest {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
+        var server = new BlockingEchoServer(singleThreadExecutor, port);
         // when
         server.start();
         // then
@@ -60,22 +60,25 @@ public class BlockingTransmogrifyServerTest {
         singleThreadExecutor.shutdownNow();
     }
     @Test
-    public void shouldTransmogrifyLetter() throws Exception {
+    public void shouldMakeUppercase() throws Exception {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
-        // when
+        var server = new BlockingEchoServer(singleThreadExecutor, port);
         server.start();
-        // then
+
         var clientSocket = new Socket("localhost", port);
         var out = clientSocket.getOutputStream();
-        out.write("hello".getBytes());
-        out.close();
         var in = clientSocket.getInputStream();
-        var data = in.readAllBytes();
-        assertThat(new String(data)).isEqualTo("hello");
+        var messageOut = "hello".getBytes();
+        // when
+        out.write(messageOut);
+        var messageIn = in.readNBytes(messageOut.length);
+        // then
+        assertThat(new String(messageIn)).isEqualTo("HELLO");
 
+        out.close();
+        in.close();
         server.stop();
         singleThreadExecutor.shutdownNow();
     }
