@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-public class BlockingEchoServerTest {
+public class BlockingTransmogrifyServerTest {
 
     private int getFreePort() throws IOException {
         var serverSocket = new ServerSocket(0);
@@ -26,7 +26,7 @@ public class BlockingEchoServerTest {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingEchoServer(singleThreadExecutor, port);
+        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
         // when
         server.start();
         // then
@@ -40,11 +40,11 @@ public class BlockingEchoServerTest {
     }
 
     @Test
-    public void shouldEcho() throws Exception {
+    public void shouldEchoNonLetter() throws Exception {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingEchoServer(singleThreadExecutor, port);
+        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
         // when
         server.start();
         // then
@@ -55,6 +55,26 @@ public class BlockingEchoServerTest {
         var in = clientSocket.getInputStream();
         var data = in.read();
         assertThat(data).isEqualTo(1);
+
+        server.stop();
+        singleThreadExecutor.shutdownNow();
+    }
+    @Test
+    public void shouldTransmogrifyLetter() throws Exception {
+        // given
+        var port = getFreePort();
+        var singleThreadExecutor = Executors.newSingleThreadExecutor();
+        var server = new BlockingTransmogrifyServer(singleThreadExecutor, port);
+        // when
+        server.start();
+        // then
+        var clientSocket = new Socket("localhost", port);
+        var out = clientSocket.getOutputStream();
+        out.write("hello".getBytes());
+        out.close();
+        var in = clientSocket.getInputStream();
+        var data = in.readAllBytes();
+        assertThat(new String(data)).isEqualTo("hello");
 
         server.stop();
         singleThreadExecutor.shutdownNow();

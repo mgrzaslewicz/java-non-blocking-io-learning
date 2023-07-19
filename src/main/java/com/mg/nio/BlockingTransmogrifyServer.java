@@ -7,12 +7,12 @@ import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BlockingEchoServer {
+public class BlockingTransmogrifyServer {
     private final ExecutorService executorService;
     private final int port;
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
-    public BlockingEchoServer(ExecutorService executorService, int port) {
+    public BlockingTransmogrifyServer(ExecutorService executorService, int port) {
         this.executorService = executorService;
         this.port = port;
     }
@@ -28,7 +28,7 @@ public class BlockingEchoServer {
                 var socket = serverSocket.accept();
                 var in = socket.getInputStream();
                 var out = socket.getOutputStream();
-                transferInToOut(in, out);
+                transmogrifyInToOut(in, out);
                 socket.close();
             }
         } catch (IOException e) {
@@ -36,14 +36,18 @@ public class BlockingEchoServer {
         }
     }
 
-    private void transferInToOut(InputStream in, OutputStream out) throws IOException {
+    private void transmogrifyInToOut(InputStream in, OutputStream out) throws IOException {
         var data = in.read();
         while (data != -1) {
-            out.write(data);
+            out.write(transmogrify(data));
             data = in.read();
         }
         in.close();
         out.close();
+    }
+
+    private int transmogrify(int data) {
+        return Character.isLetter(data) ? data ^ ' ' : data;
     }
 
     public void stop() {
