@@ -9,10 +9,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BlockingEchoServer {
     private final ExecutorService executorService;
+    private final int port;
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
-    public BlockingEchoServer(ExecutorService executorService) {
+    public BlockingEchoServer(ExecutorService executorService, int port) {
         this.executorService = executorService;
+        this.port = port;
     }
 
 
@@ -21,7 +23,7 @@ public class BlockingEchoServer {
     }
 
     private void startListening() {
-        try (var serverSocket = new ServerSocket(0)) {
+        try (var serverSocket = new ServerSocket(port)) {
             while (!stopped.get()) {
                 var socket = serverSocket.accept();
                 var in = socket.getInputStream();
