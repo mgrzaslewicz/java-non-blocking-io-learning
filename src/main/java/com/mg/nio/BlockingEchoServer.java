@@ -27,6 +27,7 @@ public class BlockingEchoServer {
                 var in = socket.getInputStream();
                 var out = socket.getOutputStream();
                 transferInToOut(in, out);
+                socket.close();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -39,6 +40,8 @@ public class BlockingEchoServer {
             out.write(data);
             data = in.read();
         }
+        in.close();
+        out.close();
     }
 
     public void stop() {
