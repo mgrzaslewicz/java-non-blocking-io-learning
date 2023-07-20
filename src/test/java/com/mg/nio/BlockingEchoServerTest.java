@@ -1,17 +1,16 @@
 package com.mg.nio;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class BlockingEchoServerTest {
 
@@ -23,14 +22,17 @@ public class BlockingEchoServerTest {
     }
 
     private static class Connection {
+        private static final Logger logger = getLogger(Connection.class);
         private final Socket socket;
 
         private Connection(Socket socket) {
             this.socket = socket;
         }
 
-        private static Connection withPort(int port) throws IOException {
-            return new Connection(new Socket("localhost", port));
+        private static Connection startWith(int port) throws IOException {
+            var socket = new Socket("localhost", port);
+            logger.info("Started connection to {}", socket.getRemoteSocketAddress());
+            return new Connection(socket);
         }
 
         public void send(byte[] data) throws IOException {
@@ -44,8 +46,9 @@ public class BlockingEchoServerTest {
             return this;
         }
 
-        public void close() throws IOException {
+        public Connection close() throws IOException {
             socket.getInputStream().close();
+            return this;
         }
 
         public int receive() throws IOException {
@@ -55,22 +58,25 @@ public class BlockingEchoServerTest {
         public byte[] receiveNBytes(int length) throws IOException {
             return socket.getInputStream().readNBytes(length);
         }
+
     }
 
     @Test
-    public void shouldBlockThread() throws IOException {
+    public void shouldAcceptOnlyOneConnection() throws IOException, InterruptedException {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingEchoServer(singleThreadExecutor, port);
-        // when
+        var latch = new CountDownLatch(1);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
         server.start();
+
+        latch.await();
+        // when
+        Connection.startWith(port);
+        Connection.startWith(port);
         // then
-        var secondJobForTheThread = singleThreadExecutor.submit(() -> {
-        });
-        // then
-        assertThatThrownBy(() -> secondJobForTheThread.get(100, TimeUnit.MILLISECONDS))
-                .isInstanceOf(TimeoutException.class);
+        assertThat(server.getAcceptedConnections()).isEqualTo(1);
+
         server.stop();
         singleThreadExecutor.shutdownNow();
     }
@@ -85,7 +91,7 @@ public class BlockingEchoServerTest {
         server.start();
 
         latch.await();
-        var connection = Connection.withPort(port);
+        var connection = Connection.startWith(port);
         // when
         connection.send(1);
         var data = connection.receive();
@@ -107,7 +113,7 @@ public class BlockingEchoServerTest {
         server.start();
 
         latch.await();
-        var connection = Connection.withPort(port);
+        var connection = Connection.startWith(port);
         var messageOut = "hello".getBytes();
         // when
         connection.send(messageOut);

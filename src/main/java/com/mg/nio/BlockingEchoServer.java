@@ -9,6 +9,7 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -18,6 +19,7 @@ public class BlockingEchoServer {
     private final ExecutorService executorService;
     private final int port;
     private final Runnable onStartedListening;
+    private final AtomicInteger acceptedConnections = new AtomicInteger(0);
 
     public BlockingEchoServer(ExecutorService executorService, int port) {
         this(executorService, port, () -> {
@@ -41,11 +43,13 @@ public class BlockingEchoServer {
             onStartedListening.run();
             while (!stopped.get()) {
                 var socket = serverSocket.accept();
+                acceptedConnections.incrementAndGet();
                 logger.info("Accepted connection from {}", socket.getRemoteSocketAddress());
                 var in = socket.getInputStream();
                 var out = socket.getOutputStream();
                 uppercaseInToOut(in, out);
                 socket.close();
+                logger.info("Closed connection from {}", socket.getRemoteSocketAddress());
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -68,6 +72,10 @@ public class BlockingEchoServer {
 
     public void stop() {
         stopped.set(true);
+    }
+
+    public int getAcceptedConnections() {
+        return acceptedConnections.get();
     }
 
 }
