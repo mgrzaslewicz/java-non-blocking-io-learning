@@ -14,13 +14,20 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class BlockingEchoServer {
     private static final Logger logger = getLogger(BlockingEchoServer.class);
+    private final AtomicBoolean stopped = new AtomicBoolean(false);
     private final ExecutorService executorService;
     private final int port;
-    private final AtomicBoolean stopped = new AtomicBoolean(false);
+    private final Runnable onStartedListening;
 
     public BlockingEchoServer(ExecutorService executorService, int port) {
+        this(executorService, port, () -> {
+        });
+    }
+
+    public BlockingEchoServer(ExecutorService executorService, int port, Runnable onStartedListening) {
         this.executorService = executorService;
         this.port = port;
+        this.onStartedListening = onStartedListening;
     }
 
 
@@ -31,6 +38,7 @@ public class BlockingEchoServer {
     private void startListening() {
         try (var serverSocket = new ServerSocket(port)) {
             logger.info("Started listening on {}", serverSocket.getLocalSocketAddress());
+            onStartedListening.run();
             while (!stopped.get()) {
                 var socket = serverSocket.accept();
                 logger.info("Accepted connection from {}", socket.getRemoteSocketAddress());

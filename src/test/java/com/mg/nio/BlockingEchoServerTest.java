@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -79,13 +80,16 @@ public class BlockingEchoServerTest {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingEchoServer(singleThreadExecutor, port);
-        // when
+        var latch = new CountDownLatch(1);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
         server.start();
-        // then
+
+        latch.await();
         var connection = Connection.withPort(port);
+        // when
         connection.send(1);
         var data = connection.receive();
+        // then
         assertThat(data).isEqualTo(1);
 
         server.stop();
@@ -98,9 +102,11 @@ public class BlockingEchoServerTest {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var server = new BlockingEchoServer(singleThreadExecutor, port);
+        var latch = new CountDownLatch(1);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
         server.start();
 
+        latch.await();
         var connection = Connection.withPort(port);
         var messageOut = "hello".getBytes();
         // when
