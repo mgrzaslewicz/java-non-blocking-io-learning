@@ -19,7 +19,7 @@ public class BlockingEchoServer {
     private final Handler<Socket> handler;
     private final Runnable onStartedListening;
 
-    public BlockingEchoServer(int port, Handler handler, Runnable onStartedListening) {
+    public BlockingEchoServer(int port, Handler<Socket> handler, Runnable onStartedListening) {
         this.port = port;
         this.handler = handler;
         this.onStartedListening = onStartedListening;

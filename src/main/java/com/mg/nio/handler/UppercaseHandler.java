@@ -10,7 +10,11 @@ public class UppercaseHandler implements Handler<Socket> {
 
     @Override
     public void handle(Socket socket) {
-        try (socket; var in = socket.getInputStream(); var out = socket.getOutputStream();) {
+        try (
+                socket;
+                var in = socket.getInputStream();
+                var out = socket.getOutputStream()
+        ) {
             uppercaseInToOut(in, out);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

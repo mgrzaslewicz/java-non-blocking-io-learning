@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 public class UppercaseNewIoHandler implements Handler<SocketChannel> {
@@ -14,7 +13,7 @@ public class UppercaseNewIoHandler implements Handler<SocketChannel> {
         try (
                 socket;
                 var in = socket.socket().getInputStream();
-                var out = socket.socket().getOutputStream();
+                var out = socket.socket().getOutputStream()
         ) {
             uppercaseInToOut(in, out);
         } catch (IOException e) {
