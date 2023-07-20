@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -16,13 +15,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class BlockingEchoServerTest {
-
-    private int getFreePort() throws IOException {
-        var serverSocket = new ServerSocket(0);
-        var port = serverSocket.getLocalPort();
-        serverSocket.close();
-        return port;
-    }
 
     private static class Connection {
         private static final Logger logger = getLogger(Connection.class);
@@ -68,7 +60,7 @@ public class BlockingEchoServerTest {
     @Test
     public void shouldAcceptOnlyOneConnection() throws IOException, InterruptedException {
         // given
-        var port = getFreePort();
+        var port = FreePortFinder.getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
         var latch = new CountDownLatch(1);
 
@@ -91,7 +83,7 @@ public class BlockingEchoServerTest {
     @Test
     public void shouldAccept2Connections() throws IOException, InterruptedException {
         // given
-        var port = getFreePort();
+        var port = FreePortFinder.getFreePort();
         var threadPoolExecutor = Executors.newFixedThreadPool(2);
         var serverReadyLatch = new CountDownLatch(1);
         var countingAcceptedConnectionsHandler = new CountingAcceptedConnectionsHandler<>(new LoggingHandler(new UppercaseHandler()));
@@ -116,7 +108,7 @@ public class BlockingEchoServerTest {
     @Test
     public void shouldEchoNonLetter() throws Exception {
         // given
-        var port = getFreePort();
+        var port = FreePortFinder.getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
         var serverReadyLatch = new CountDownLatch(1);
         var handler = new LoggingHandler(new UppercaseHandler());
@@ -139,7 +131,7 @@ public class BlockingEchoServerTest {
     @Test
     public void shouldMakeUppercase() throws Exception {
         // given
-        var port = getFreePort();
+        var port = FreePortFinder.getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
         var serverReadyLatch = new CountDownLatch(1);
         var handler = new LoggingHandler(new UppercaseHandler());
