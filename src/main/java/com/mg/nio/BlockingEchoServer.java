@@ -1,39 +1,27 @@
 package com.mg.nio;
 
+import com.mg.nio.handler.Handler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class BlockingEchoServer {
     private static final Logger logger = getLogger(BlockingEchoServer.class);
     private final AtomicBoolean stopped = new AtomicBoolean(false);
-    private final AtomicInteger acceptedConnections = new AtomicInteger(0);
 
-    private final ExecutorService executorService;
     private final int port;
+    private final Handler handler;
     private final Runnable onStartedListening;
-    private final int numberOfParallelConnections;
 
-    public BlockingEchoServer(ExecutorService executorService, int port, int numberOfParallelConnections) {
-        this(executorService, port, () -> {
-        }, numberOfParallelConnections);
-    }
-
-    public BlockingEchoServer(ExecutorService executorService, int port, Runnable onStartedListening, int numberOfParallelConnections) {
-        this.executorService = executorService;
+    public BlockingEchoServer(int port, Handler handler, Runnable onStartedListening) {
         this.port = port;
+        this.handler = handler;
         this.onStartedListening = onStartedListening;
-        this.numberOfParallelConnections = numberOfParallelConnections;
     }
 
 
@@ -45,7 +33,7 @@ public class BlockingEchoServer {
                 while (!stopped.get()) {
                     try {
                         var socket = serverSocket.accept();
-                        handleConnection(socket);
+                        handler.handle(socket);
                     } catch (IOException e) {
                         logger.error("Error while handling client connection", e);
                         throw new UncheckedIOException(e);
@@ -58,41 +46,8 @@ public class BlockingEchoServer {
         }).start();
     }
 
-    private void handleConnection(Socket socket) throws IOException {
-        executorService.submit(() -> {
-            acceptedConnections.incrementAndGet();
-            logger.info("Accepted connection from {}", socket.getRemoteSocketAddress());
-            try (socket; var in = socket.getInputStream(); var out = socket.getOutputStream();) {
-                uppercaseInToOut(in, out);
-            } catch (IOException e) {
-                logger.error("Error while handling client connection", e);
-                throw new UncheckedIOException(e);
-            } finally {
-                logger.info("Closed connection from {}", socket.getRemoteSocketAddress());
-            }
-        });
-    }
-
-    private void uppercaseInToOut(InputStream in, OutputStream out) throws IOException {
-        var data = in.read();
-        while (data != -1) {
-            out.write(uppercase(data));
-            data = in.read();
-        }
-        in.close();
-        out.close();
-    }
-
-    private int uppercase(int data) {
-        return Character.isLetter(data) ? data ^ ' ' : data;
-    }
-
     public void stop() {
         stopped.set(true);
-    }
-
-    public int getAcceptedConnections() {
-        return acceptedConnections.get();
     }
 
 }
