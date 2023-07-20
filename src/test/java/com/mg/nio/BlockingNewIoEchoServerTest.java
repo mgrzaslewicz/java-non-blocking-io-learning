@@ -35,7 +35,7 @@ public class BlockingNewIoEchoServerTest {
             this.socket = socket;
         }
 
-        private static Connection startWith(int port) throws IOException {
+        private static Connection open(int port) throws IOException {
             logger.info("Starting connection at port {}...", port);
             var socket = SocketChannel.open(new InetSocketAddress("localhost", port));
             logger.info("Started connection to {}", socket.getRemoteAddress());
@@ -109,8 +109,8 @@ public class BlockingNewIoEchoServerTest {
 
         latch.await();
         // when
-        Connection.startWith(port);
-        Connection.startWith(port);
+        Connection.open(port);
+        Connection.open(port);
         // then
         assertThat(acceptedConnectionsHandler.getAcceptedConnections()).isEqualTo(1);
 
@@ -133,8 +133,8 @@ public class BlockingNewIoEchoServerTest {
 
         serverReadyLatch.await();
         // when
-        Connection.startWith(port);
-        Connection.startWith(port);
+        Connection.open(port);
+        Connection.open(port);
         // then
         allConnectionsLatch.await();
         assertThat(countingAcceptedConnectionsHandler.getAcceptedConnections()).isEqualTo(2);
@@ -154,7 +154,7 @@ public class BlockingNewIoEchoServerTest {
         server.start();
 
         serverReadyLatch.await();
-        var connection = Connection.startWith(port);
+        var connection = Connection.open(port);
         // when
         connection.send(1);
         var data = connection.receive();
@@ -177,7 +177,7 @@ public class BlockingNewIoEchoServerTest {
         server.start();
 
         serverReadyLatch.await();
-        var connection = Connection.startWith(port);
+        var connection = Connection.open(port);
         var messageOut = "hello".getBytes();
         // when
         connection.send(messageOut);
