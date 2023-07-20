@@ -6,11 +6,11 @@ import java.net.Socket;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class LoggingHandler implements Handler {
+public class LoggingHandler implements Handler<Socket> {
     private static final Logger logger = getLogger(LoggingHandler.class);
-    private final Handler decorated;
+    private final Handler<Socket> decorated;
 
-    public LoggingHandler(Handler decorated) {
+    public LoggingHandler(Handler<Socket> decorated) {
         this.decorated = decorated;
     }
 

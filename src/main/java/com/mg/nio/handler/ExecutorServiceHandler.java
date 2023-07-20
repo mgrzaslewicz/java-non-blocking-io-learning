@@ -1,19 +1,18 @@
 package com.mg.nio.handler;
 
-import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 
-public class ExecutorServiceHandler implements Handler {
-    private final Handler decorated;
+public class ExecutorServiceHandler<T> implements Handler<T> {
+    private final Handler<T> decorated;
     private final ExecutorService executorService;
 
-    public ExecutorServiceHandler(Handler decorated, ExecutorService executorService) {
+    public ExecutorServiceHandler(Handler<T> decorated, ExecutorService executorService) {
         this.decorated = decorated;
         this.executorService = executorService;
     }
 
     @Override
-    public void handle(Socket socket) {
+    public void handle(T socket) {
         executorService.submit(() -> decorated.handle(socket));
     }
 }

@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.Socket;
 
-public class UppercaseHandler implements Handler {
+public class UppercaseHandler implements Handler<Socket> {
 
     @Override
     public void handle(Socket socket) {

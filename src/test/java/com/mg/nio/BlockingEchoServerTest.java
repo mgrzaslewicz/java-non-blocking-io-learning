@@ -1,8 +1,8 @@
 package com.mg.nio;
 
+import com.mg.nio.handler.ExecutorServiceHandler;
 import com.mg.nio.handler.Handler;
 import com.mg.nio.handler.LoggingHandler;
-import com.mg.nio.handler.ExecutorServiceHandler;
 import com.mg.nio.handler.UppercaseHandler;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -67,16 +67,16 @@ public class BlockingEchoServerTest {
 
     }
 
-    private static class CountingAcceptedConnectionsHandler implements Handler {
-        private final Handler decorated;
+    private static class CountingAcceptedConnectionsHandler<T> implements Handler<T> {
+        private final Handler<T> decorated;
         private final AtomicInteger acceptedConnections = new AtomicInteger(0);
 
-        private CountingAcceptedConnectionsHandler(Handler decorated) {
+        private CountingAcceptedConnectionsHandler(Handler<T> decorated) {
             this.decorated = decorated;
         }
 
         @Override
-        public void handle(Socket socket) {
+        public void handle(T socket) {
             acceptedConnections.incrementAndGet();
             decorated.handle(socket);
         }
@@ -86,17 +86,9 @@ public class BlockingEchoServerTest {
         }
     }
 
-    private static class CountdownLatchHandler implements Handler {
-        private final Handler decorated;
-        private final CountDownLatch latch;
-
-        private CountdownLatchHandler(Handler decorated, CountDownLatch latch) {
-            this.decorated = decorated;
-            this.latch = latch;
-        }
-
+    private record CountdownLatchHandler<T>(Handler<T> decorated, CountDownLatch latch) implements Handler<T> {
         @Override
-        public void handle(Socket socket) {
+        public void handle(T socket) {
             latch.countDown();
             decorated.handle(socket);
         }
@@ -110,7 +102,7 @@ public class BlockingEchoServerTest {
         var latch = new CountDownLatch(1);
 
         var handler = new LoggingHandler(new UppercaseHandler());
-        var acceptedConnectionsHandler = new CountingAcceptedConnectionsHandler(handler);
+        var acceptedConnectionsHandler = new CountingAcceptedConnectionsHandler<>(handler);
         var server = new BlockingEchoServer(port, acceptedConnectionsHandler, latch::countDown);
         server.start();
 
@@ -131,10 +123,10 @@ public class BlockingEchoServerTest {
         var port = getFreePort();
         var threadPoolExecutor = Executors.newFixedThreadPool(2);
         var serverReadyLatch = new CountDownLatch(1);
-        var countingAcceptedConnectionsHandler = new CountingAcceptedConnectionsHandler(new LoggingHandler(new UppercaseHandler()));
+        var countingAcceptedConnectionsHandler = new CountingAcceptedConnectionsHandler<>(new LoggingHandler(new UppercaseHandler()));
         var allConnectionsLatch = new CountDownLatch(2);
-        var countdownLatchHandler = new CountdownLatchHandler(countingAcceptedConnectionsHandler, allConnectionsLatch);
-        var multithreadedHandler = new ExecutorServiceHandler(countdownLatchHandler, threadPoolExecutor);
+        var countdownLatchHandler = new CountdownLatchHandler<Socket>(countingAcceptedConnectionsHandler, allConnectionsLatch);
+        var multithreadedHandler = new ExecutorServiceHandler<>(countdownLatchHandler, threadPoolExecutor);
         var server = new BlockingEchoServer(port, multithreadedHandler, serverReadyLatch::countDown);
         server.start();
 
