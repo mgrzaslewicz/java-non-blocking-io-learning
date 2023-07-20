@@ -30,6 +30,7 @@ public class BlockingEchoServerTest {
         }
 
         private static Connection startWith(int port) throws IOException {
+            logger.info("Starting connection at port {}...", port);
             var socket = new Socket("localhost", port);
             logger.info("Started connection to {}", socket.getRemoteSocketAddress());
             return new Connection(socket);
@@ -67,7 +68,7 @@ public class BlockingEchoServerTest {
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
         var latch = new CountDownLatch(1);
-        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown, 1);
         server.start();
 
         latch.await();
@@ -80,17 +81,36 @@ public class BlockingEchoServerTest {
         server.stop();
         singleThreadExecutor.shutdownNow();
     }
+    @Test
+    public void shouldAccept2Connections() throws IOException, InterruptedException {
+        // given
+        var port = getFreePort();
+        var threadPoolExecutor = Executors.newFixedThreadPool(2);
+        var latch = new CountDownLatch(1);
+        var server = new BlockingEchoServer(threadPoolExecutor, port, latch::countDown, 2);
+        server.start();
+
+        latch.await();
+        // when
+        Connection.startWith(port);
+        Connection.startWith(port);
+        // then
+        assertThat(server.getAcceptedConnections()).isEqualTo(2);
+
+        server.stop();
+        threadPoolExecutor.shutdownNow();
+    }
 
     @Test
     public void shouldEchoNonLetter() throws Exception {
         // given
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
-        var latch = new CountDownLatch(1);
-        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
+        var serverReadyLatch = new CountDownLatch(1);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, serverReadyLatch::countDown, 1);
         server.start();
 
-        latch.await();
+        serverReadyLatch.await();
         var connection = Connection.startWith(port);
         // when
         connection.send(1);
@@ -109,7 +129,7 @@ public class BlockingEchoServerTest {
         var port = getFreePort();
         var singleThreadExecutor = Executors.newSingleThreadExecutor();
         var latch = new CountDownLatch(1);
-        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown);
+        var server = new BlockingEchoServer(singleThreadExecutor, port, latch::countDown, 1);
         server.start();
 
         latch.await();
