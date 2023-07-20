@@ -1,7 +1,6 @@
 package com.mg.nio;
 
 import com.mg.nio.handler.ExecutorServiceHandler;
-import com.mg.nio.handler.Handler;
 import com.mg.nio.handler.LoggingNewIoHandler;
 import com.mg.nio.handler.UppercaseNewIoHandler;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,6 @@ import java.net.ServerSocket;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -66,33 +64,6 @@ public class BlockingNewIoEchoServerTest {
             return socket.socket().getInputStream().readNBytes(length);
         }
 
-    }
-
-    private static class CountingAcceptedConnectionsHandler<T> implements Handler<T> {
-        private final Handler<T> decorated;
-        private final AtomicInteger acceptedConnections = new AtomicInteger(0);
-
-        private CountingAcceptedConnectionsHandler(Handler<T> decorated) {
-            this.decorated = decorated;
-        }
-
-        @Override
-        public void handle(T socket) {
-            acceptedConnections.incrementAndGet();
-            decorated.handle(socket);
-        }
-
-        public int getAcceptedConnections() {
-            return acceptedConnections.get();
-        }
-    }
-
-    private record CountdownLatchHandler<T>(Handler<T> decorated, CountDownLatch latch) implements Handler<T> {
-        @Override
-        public void handle(T socket) {
-            latch.countDown();
-            decorated.handle(socket);
-        }
     }
 
     @Test
