@@ -2,7 +2,7 @@ package com.mg.nio;
 
 import com.mg.nio.handler.Handler;
 import com.mg.nio.handler.LoggingHandler;
-import com.mg.nio.handler.MultithreadedHandler;
+import com.mg.nio.handler.ExecutorServiceHandler;
 import com.mg.nio.handler.UppercaseHandler;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -134,7 +134,7 @@ public class BlockingEchoServerTest {
         var countingAcceptedConnectionsHandler = new CountingAcceptedConnectionsHandler(new LoggingHandler(new UppercaseHandler()));
         var allConnectionsLatch = new CountDownLatch(2);
         var countdownLatchHandler = new CountdownLatchHandler(countingAcceptedConnectionsHandler, allConnectionsLatch);
-        var multithreadedHandler = new MultithreadedHandler(countdownLatchHandler, threadPoolExecutor);
+        var multithreadedHandler = new ExecutorServiceHandler(countdownLatchHandler, threadPoolExecutor);
         var server = new BlockingEchoServer(port, multithreadedHandler, serverReadyLatch::countDown);
         server.start();
 
